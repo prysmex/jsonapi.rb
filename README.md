@@ -1,16 +1,5 @@
 # JSONAPI.rb :electric_plug:
 
-[![Build Status](https://travis-ci.org/stas/jsonapi.rb.svg?branch=master)](https://travis-ci.org/stas/jsonapi.rb)
-
-So you say you need [JSON:API](https://jsonapi.org/) support in your API...
-
-> - hey how did your hackathon go?
-> - not too bad, we got Babel set up
-> - yep…
-> - yep.
->
->— [I Am Devloper](https://twitter.com/iamdevloper/status/787969734918668289)
-
 Here are some _codes_ to help you build your next JSON:API compliable application
 easier and faster.
 
@@ -37,10 +26,7 @@ The available features include:
  * fetching of the data (support for
    [includes](https://jsonapi.org/format/#fetching-includes) and
    [sparse fields](https://jsonapi.org/format/#fetching-sparse-fieldsets))
- * [filtering](https://jsonapi.org/format/#fetching-filtering) and
-   [sorting](https://jsonapi.org/format/#fetching-sorting) of the data
-   (powered by Ransack)
- * [pagination](https://jsonapi.org/format/#fetching-pagination) support
+ <!-- * [pagination](https://jsonapi.org/format/#fetching-pagination) support -->
 
 ## But how?
 
@@ -71,9 +57,7 @@ Or install it yourself as:
  * [Collection meta](#collection-meta)
  * [Error handling](#error-handling)
  * [Includes and sparse fields](#includes-and-sparse-fields)
- * [Filtering and sorting](#filtering-and-sorting)
-   * [Sorting using expressions](#sorting-using-expressions)
- * [Pagination](#pagination)
+ <!-- * [Pagination](#pagination) -->
  * [Deserialization](#deserialization)
 
 ---
@@ -274,7 +258,7 @@ This allows you to run queries like:
 $ curl -X GET /api/resources?sort=-model_attr_sum
 ```
 
-### Pagination
+<!-- ### Pagination
 
 `JSONAPI::Pagination` provides support for paginating model record sets as long
 as enumerables.
@@ -304,8 +288,8 @@ use the `jsonapi_pagination_meta` method:
 
     { pagination: pagination } if pagination.present?
   end
+``` -->
 
-```
 ### Deserialization
 
 `JSONAPI::Deserialization` provides a helper to transform a `JSONAPI` document

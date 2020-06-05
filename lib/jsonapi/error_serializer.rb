@@ -15,11 +15,12 @@ module JSONAPI
       end
     end
 
+    #TODO should this class just be a simple hash?
     # Remap the root key to `errors`
-    #
     # @return [Hash]
     def serializable_hash
-      { errors: (super[:data] || []).map { |error| error[:attributes] } }
+      hash = super[:data] || []
+      { errors: hash.map { |error| error[:attributes] } }
     end
   end
 end

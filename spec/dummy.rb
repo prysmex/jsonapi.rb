@@ -2,7 +2,6 @@ require 'securerandom'
 require 'active_record'
 require 'action_controller/railtie'
 require 'jsonapi'
-require 'ransack'
 
 Rails.logger = Logger.new(STDOUT)
 Rails.logger.level = ENV['LOG_LEVEL'] || Logger::WARN
@@ -74,90 +73,84 @@ class Dummy < Rails::Application
   end
 end
 
-class UsersController < ActionController::Base
-  include JSONAPI::Fetching
-  include JSONAPI::Filtering
-  include JSONAPI::Pagination
-  include JSONAPI::Deserialization
+# class UsersController < ActionController::Base
+#   include JSONAPI::Fetching
+#   include JSONAPI::Pagination
+#   include JSONAPI::Deserialization
 
-  def index
-    allowed_fields = [
-      :first_name, :last_name, :created_at,
-      :notes_created_at, :notes_quantity
-    ]
-    options = { sort_with_expressions: true }
+#   def index
 
-    jsonapi_filter(User.all, allowed_fields, options) do |filtered|
-      result = filtered.result
+#     # result = User.all
 
-      if params[:sort].to_s.include?('notes_quantity')
-        render jsonapi: result.group('id').to_a
-        return
-      end
+#     # if params[:sort].to_s.include?('notes_quantity')
+#     #   render jsonapi: result.group('id').to_a
+#     #   return
+#     # end
 
-      result = result.to_a if params[:as_list]
+#     # result = result.to_a if params[:as_list]
 
-      jsonapi_paginate(result) do |paginated|
-        render jsonapi: paginated
-      end
-    end
-  end
+#     # jsonapi_paginate(result) do |paginated|
+#     #   render jsonapi: paginated
+#     # end
 
-  private
-  def jsonapi_meta(resources)
-    {
-      many: true,
-      pagination: jsonapi_pagination_meta(resources)
-    }
-  end
+#   end
 
-  def jsonapi_serializer_params
-    {
-      first_name_upcase: params[:upcase]
-    }
-  end
-end
+#   private
+#   def jsonapi_meta(resources)
+#     {
+#       many: true,
+#       pagination: jsonapi_pagination_meta(resources)
+#     }
+#   end
 
-class NotesController < ActionController::Base
-  include JSONAPI::Errors
-  include JSONAPI::Deserialization
+#   def jsonapi_serializer_params
+#     {
+#       first_name_upcase: params[:upcase]
+#     }
+#   end
+# end
 
-  def update
-    raise_error! if params[:id] == 'tada'
+# class NotesController < ActionController::Base
+#   include JSONAPI::Errors
+#   include JSONAPI::Deserialization
 
-    note = Note.find(params[:id])
+#   def update
+#     raise_error! if params[:id] == 'tada'
 
-    if note.update(note_params)
-      render jsonapi: note
-    else
-      note.errors.add(:title, message: 'has typos') if note.errors.key?(:title)
+#     note = Note.find(params[:id])
 
-      render jsonapi_errors: note.errors, status: :unprocessable_entity
-    end
-  end
+#     if note.update(note_params)
+#       render jsonapi: note
+#     else
+#       note.errors.add(:title, message: 'has typos') if note.errors.key?(:title)
 
-  private
-  def render_jsonapi_internal_server_error(exception)
-    Rails.logger.error(exception)
-    super(exception)
-  end
+#       render jsonapi_errors: note.errors, status: :unprocessable_entity
+#     end
+#   end
 
-  def jsonapi_serializer_class(resource, is_collection)
-    JSONAPI::Rails.serializer_class(resource, is_collection)
-  rescue NameError
-    klass = resource.class
-    klass = resource.first.class if is_collection
-    "Custom#{klass.name}Serializer".constantize
-  end
+#   private
+#   def render_jsonapi_internal_server_error(exception)
+#     Rails.logger.error(exception)
+#     super(exception)
+#   end
 
-  def note_params
-    # Will trigger required attribute error handling
-    params.require(:data).require(:attributes).require(:title)
+#   def jsonapi_serializer_class(resource, is_collection)
+#     JSONAPI::Rails.serializer_class(resource, is_collection)
+#   rescue NameError
+#     klass = resource.class
+#     klass = resource.first.class if is_collection
+#     "Custom#{klass.name}Serializer".constantize
+#   end
 
-    jsonapi_deserialize(params)
-  end
+#   def note_params
+#     # Will trigger required attribute error handling
+#     params.require(:data).require(:attributes).require(:title)
 
-  def jsonapi_meta(resources)
-    { single: true }
-  end
+#     jsonapi_deserialize(params)
+#   end
+
+#   def jsonapi_meta(resources)
+#     { single: true }
+#   end
+
 end

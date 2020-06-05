@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = 'So you say you need JSON:API support in your API...'
   spec.description   = (
-    'JSON:API serialization, error handling, filtering and pagination.'
+    'JSON:API serialization, error handling, and pagination.'
   )
   spec.homepage      = 'https://github.com/stas/jsonapi.rb'
   spec.license       = 'MIT'
@@ -22,7 +22,6 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.add_dependency 'fast_jsonapi', '~> 1.5'
-  spec.add_dependency 'ransack'
   spec.add_dependency 'rack'
 
   spec.add_development_dependency 'bundler'
@@ -32,7 +31,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rspec', '~> 3.0'
   spec.add_development_dependency 'rspec-rails'
   spec.add_development_dependency 'jsonapi-rspec'
-  spec.add_development_dependency 'yardstick'
   spec.add_development_dependency 'rubocop-rails_config'
   spec.add_development_dependency 'rubocop'
   spec.add_development_dependency 'simplecov'

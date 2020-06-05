@@ -6,7 +6,7 @@ module JSONAPI
   module Rails
     JSONAPI_METHODS_MAPPING = {
       meta: :jsonapi_meta,
-      links: :jsonapi_pagination,
+      # links: :jsonapi_pagination,
       fields: :jsonapi_fields,
       include: :jsonapi_include,
       params: :jsonapi_serializer_params
@@ -21,12 +21,8 @@ module JSONAPI
       Mime::Type.register JSONAPI::MEDIA_TYPE, :jsonapi
 
       # Map the JSON parser to the JSONAPI mime type requests.
-      if ::Rails::VERSION::MAJOR >= 5
-        parser = ActionDispatch::Request.parameter_parsers[:json]
-        ActionDispatch::Request.parameter_parsers[:jsonapi] = parser
-      else
-        ActionDispatch::ParamsParser::DEFAULT_PARSERS[Mime[:jsonapi]] = :json
-      end
+      ActionDispatch::Request.parameter_parsers[:jsonapi] = 
+      ActionDispatch::Request.parameter_parsers[:json]
 
       self.add_renderer!
       self.add_errors_renderer!
@@ -79,10 +75,10 @@ module JSONAPI
       ActionController::Renderers.add(:jsonapi) do |resource, options|
         self.content_type ||= Mime[:jsonapi]
 
-        JSONAPI_METHODS_MAPPING.to_a[0..1].each do |opt, method_name|
-          next unless respond_to?(method_name, true)
-          options[opt] ||= send(method_name, resource)
-        end
+        # JSONAPI_METHODS_MAPPING.to_a[0..1].each do |opt, method_name|
+        #   next unless respond_to?(method_name, true)
+        #   options[opt] ||= send(method_name, resource)
+        # end
 
         # If it's an empty collection, return it directly.
         many = JSONAPI::Rails.is_collection?(resource, options[:is_collection])
@@ -90,9 +86,9 @@ module JSONAPI
           return options.slice(:meta, :links).merge(data: []).to_json
         end
 
-        JSONAPI_METHODS_MAPPING.to_a[2..-1].each do |opt, method_name|
-          options[opt] ||= send(method_name) if respond_to?(method_name, true)
-        end
+        # JSONAPI_METHODS_MAPPING.to_a[2..-1].each do |opt, method_name|
+        #   options[opt] ||= send(method_name) if respond_to?(method_name, true)
+        # end
 
         if respond_to?(:jsonapi_serializer_class, true)
           serializer_class = jsonapi_serializer_class(resource, many)
@@ -126,5 +122,6 @@ module JSONAPI
 
       "#{klass.name}Serializer".constantize
     end
+
   end
 end
