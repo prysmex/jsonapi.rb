@@ -21,7 +21,7 @@ Gem::Specification.new do |spec|
   end
   spec.require_paths = ['lib']
 
-  spec.add_dependency 'fast_jsonapi', '~> 1.5'
+  spec.add_dependency 'jsonapi-serializer', '~> 2.2'
   spec.add_dependency 'rack'
 
   spec.add_development_dependency 'bundler'
