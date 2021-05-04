@@ -8,31 +8,23 @@ easier and faster.
 It's quite a hassle to setup a Ruby (Rails) web application to use and follow
 the JSON:API specifications.
 
-The idea is simple, JSONAPI.rb offers a bunch of modules/mixins/glue,
-add them to your controllers, call some methods, _profit_!
-
-Main goals:
- * No _magic_ please
- * No DSLs please
- * Less code, less maintenance
- * Good docs and test coverage
- * Keep it up-to-date (or at least tell people this is for _grabs_)
+The idea is simple, JSONAPI.rb offers an easy way to confiture your application
+with code that contains no _magic_ and with little code!
 
 The available features include:
-
  * object serialization (powered by Fast JSON API)
  * [error handling](https://jsonapi.org/format/#errors) (parameters,
    validation, generic errors)
  * fetching of the data (support for
    [includes](https://jsonapi.org/format/#fetching-includes) and
    [sparse fields](https://jsonapi.org/format/#fetching-sparse-fieldsets))
- <!-- * [pagination](https://jsonapi.org/format/#fetching-pagination) support -->
+   
+ToDo:
+ * deserialization
 
 ## But how?
 
 Mainly by leveraging [Fast JSON API](https://github.com/Netflix/fast_jsonapi)
-and [Ransack](https://github.com/activerecord-hackery/ransack).
-
 Thanks to everyone who worked on these amazing projects!
 
 ## Installation
@@ -57,8 +49,6 @@ Or install it yourself as:
  * [Collection meta](#collection-meta)
  * [Error handling](#error-handling)
  * [Includes and sparse fields](#includes-and-sparse-fields)
- <!-- * [Pagination](#pagination) -->
- * [Deserialization](#deserialization)
 
 ---
 
