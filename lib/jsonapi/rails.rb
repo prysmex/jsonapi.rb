@@ -4,16 +4,21 @@ require 'jsonapi/active_model_error_serializer'
 # Rails integration
 module JSONAPI
   module Rails
+
+    # maps an option key to a method name
     JSONAPI_METHODS_MAPPING = {
+      params: :jsonapi_serializer_params,
       meta: :jsonapi_meta,
       # links: :jsonapi_pagination,
       fields: :jsonapi_fields,
       include: :jsonapi_include,
-      params: :jsonapi_serializer_params
     }
 
-    # Updates the mime types and registers the renderers
-    #
+    # Updates the mime types and registers the renderers so they can be used
+    # in the controller's render method
+    # e.g.
+    #  - render jsonapi: ...
+    #  - render jsonapi_errors: ...
     # @return [NilClass]
     def self.install!
       return unless defined?(::Rails)
@@ -22,48 +27,56 @@ module JSONAPI
 
       # Map the JSON parser to the JSONAPI mime type requests.
       ActionDispatch::Request.parameter_parsers[:jsonapi] = 
-      ActionDispatch::Request.parameter_parsers[:json]
+          ActionDispatch::Request.parameter_parsers[:json]
 
-      self.add_renderer!
-      self.add_errors_renderer!
+      self.register_jsonapi_renderer!
+      self.register_jsonapi_errors_renderer!
     end
 
-    # Adds the error renderer
+    # Registers the error renderer
     #
+    # If the passed resource is NOT an instance of ActiveModel::Errors
+    # JSONAPI::ErrorSerializer is used to serialize, otherwise the
+    # serializer is resolved
+    # 
     # @return [NilClass]
-    def self.add_errors_renderer!
+    def self.register_jsonapi_errors_renderer!
       ActionController::Renderers.add(:jsonapi_errors) do |resource, options|
         self.content_type ||= Mime[:jsonapi]
 
         many = JSONAPI::Rails.is_collection?(resource, options[:is_collection])
         resource = [resource] unless many
 
-        return JSONAPI::ErrorSerializer.new(resource, options)
-          .serializable_hash.to_json unless resource.is_a?(ActiveModel::Errors)
-
-        errors = []
-        model = resource.instance_variable_get('@base')
-
-        if respond_to?(:jsonapi_serializer_class, true)
-          model_serializer = jsonapi_serializer_class(model, false)
-        else
-          model_serializer = JSONAPI::Rails.serializer_class(model, false)
+        # render with simple ErrorSerializer
+        unless resource.is_a?(ActiveModel::Errors)
+          return JSONAPI::ErrorSerializer.new(resource, options)
+            .serializable_hash.to_json
         end
 
-        details = resource.messages
-        details = resource.details if resource.respond_to?(:details)
+        model = resource.instance_variable_get('@base')
+        details = resource.details
+        messages = resource.messages
 
-        details.each do |error_key, error_hashes|
-          error_hashes.each do |error_hash|
-            # Rails 4 provides just the message.
-            error_hash = { message: error_hash } unless error_hash.is_a?(Hash)
-
-            errors << [ error_key, error_hash ]
+        errors = details.each_with_object([]).with_index do | ((key, val), obj), index|
+          val.each.with_index do |error_hash, i|
+            obj << [ key, error_hash, messages[key][i] ]
           end
         end
 
+        # get serializer class
+        model_serializer = if respond_to?(:jsonapi_serializer_class, true)
+          jsonapi_serializer_class(model, false)
+        else
+          JSONAPI::Rails.serializer_class(model, false)
+        end
+
+        # render errors
         JSONAPI::ActiveModelErrorSerializer.new(
-          errors, params: { model: model, model_serializer: model_serializer }
+          errors,
+          params: {
+            model: model,
+            model_serializer: model_serializer
+          }
         ).serializable_hash.to_json
       end
     end
@@ -71,7 +84,7 @@ module JSONAPI
     # Adds the default renderer
     #
     # @return [NilClass]
-    def self.add_renderer!
+    def self.register_jsonapi_renderer!
       ActionController::Renderers.add(:jsonapi) do |resource, options|
         self.content_type ||= Mime[:jsonapi]
 
@@ -90,10 +103,11 @@ module JSONAPI
         #   options[opt] ||= send(method_name) if respond_to?(method_name, true)
         # end
 
-        if respond_to?(:jsonapi_serializer_class, true)
-          serializer_class = jsonapi_serializer_class(resource, many)
+        # get serializer class
+        serializer_class = if respond_to?(:jsonapi_serializer_class, true)
+          jsonapi_serializer_class(resource, many)
         else
-          serializer_class = JSONAPI::Rails.serializer_class(resource, many)
+          JSONAPI::Rails.serializer_class(resource, many)
         end
 
         serializer_class.new(resource, options).serializable_hash.to_json
@@ -101,7 +115,6 @@ module JSONAPI
     end
 
     # Checks if an object is a collection
-    #
     # Stolen from [FastJsonapi::ObjectSerializer], instance method.
     #
     # @param resource [Object] to check
@@ -115,6 +128,8 @@ module JSONAPI
 
     # Resolves resource serializer class
     #
+    # @param resource [Object] to infer class from
+    # @param is_collection [TrueClass] when resource is a collection
     # @return [Class]
     def self.serializer_class(resource, is_collection)
       klass = resource.class

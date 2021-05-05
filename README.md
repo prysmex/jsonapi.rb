@@ -78,7 +78,7 @@ Please follow the
 on how to define a serializer.
 
 To provide a different naming scheme implement the `jsonapi_serializer_class`
-method in your resource or application controller.
+method in your controller.
 
 Here's an example:
 ```ruby
