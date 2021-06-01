@@ -1,3 +1,5 @@
+require 'rails_jsonapi/error_serializer'
+require 'rails_jsonapi/active_model_error_serializer'
 require 'rails_jsonapi/controller_error_hooks'
 require 'rails_jsonapi/controller'
 require 'rails_jsonapi/deserialization'

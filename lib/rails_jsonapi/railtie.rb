@@ -1,11 +1,6 @@
 
 require 'rails/railtie'
 
-require 'rails_jsonapi/error_serializer'
-require 'rails_jsonapi/active_model_error_serializer'
-
-# Rails integration
-
 module RailsJSONAPI
   module Rails
 
