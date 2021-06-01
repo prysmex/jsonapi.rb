@@ -1,11 +1,12 @@
 require 'rack/utils'
 
-module JSONAPI
+module RailsJSONAPI
   # Helpers to handle some error responses
   #
   # Most of the exceptions are handled in Rails by [ActionDispatch] middleware
   # See: https://api.rubyonrails.org/classes/ActionDispatch/ExceptionWrapper.html
-  module Errors
+  module ControllerErrorHooks
+    
     # Callback will register the error handlers
     #
     # @return [Module]
@@ -66,5 +67,6 @@ module JSONAPI
 
       render jsonapi_errors: [error], status: :unprocessable_entity
     end
+
   end
 end

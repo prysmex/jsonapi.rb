@@ -1,6 +1,6 @@
 require 'fast_jsonapi'
 
-module JSONAPI
+module RailsJSONAPI
   # A simple error serializer
   # This could be a simpler class, since the 'serializable_hash'
   # method is overriden.

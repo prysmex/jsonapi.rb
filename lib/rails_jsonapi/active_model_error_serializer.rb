@@ -1,6 +1,6 @@
-require 'jsonapi/error_serializer'
+require 'rails_jsonapi/error_serializer'
 
-module JSONAPI
+module RailsJSONAPI
   # Serializer that handles ActiveModel::Errors objects
   class ActiveModelErrorSerializer < ErrorSerializer
     set_id :object_id
