@@ -130,7 +130,6 @@ module RailsJSONAPI
             self.content_type ||= Mime[:jsonapi]
   
             many = options[:is_collection] || RailsJSONAPI::Rails.is_collection?(resource)
-  
             if resource.is_a?(ActiveModel::Errors)
               # render with ActiveModelErrorSerializer
               model = resource.instance_variable_get('@base')
@@ -149,7 +148,7 @@ module RailsJSONAPI
                 elsif respond_to?(:jsonapi_serializer_class, true)
                   jsonapi_serializer_class(model, many)
                 else
-                  "#{model}Serializer".constantize
+                  "#{model.class.name}Serializer".constantize
                 end
   
               RailsJSONAPI::ActiveModelErrorSerializer.new(
@@ -161,6 +160,7 @@ module RailsJSONAPI
               ).serializable_hash.to_json
             else
               # render with simple ErrorSerializer
+              resource = [resource] unless many
               RailsJSONAPI::ErrorSerializer.new(resource, options)
                 .serializable_hash
                 .to_json
