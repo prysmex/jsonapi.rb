@@ -4,48 +4,39 @@ module RailsJSONAPI
 
     class_methods do
         
-      #   @example
-      #     class ArticlesController < ActionController::Base
+      # @example
+      #   class ArticlesController < ActionController::Base
 
-      #       json_api_deserialize({
-      #         key: (->(h) { h['data']['type'].underscore.singularize }),
-      #         lid_regex: ApplicationRecord::LOCAL_ID_REGEX,
-      #         only: [:create, :update],
-      #         if: -> { json_api_request? }
+      #     before_action only: [:create, :update], if: -> { json_api_request? } do |ctx|
+      #       raw_jsonapi = ctx.params['raw_jsonapi']
+      #       key_name = raw_jsonapi['data']['type'].underscore.singularize
+            
+      #       ctx.params = ctx.params.merge({
+      #         "#{key_name}": ctx.class.send(
+      #           'deep_deserialize_jsonapi',
+      #           raw_jsonapi,
+      #           'lid',
+      #           ApplicationRecord::LOCAL_ID_REGEX
+      #         )
       #       })
-        
-      #       def create
-      #         article = Article.new(params[:article])
-        
-      #         if article.save
-      #           render jsonapi: article
-      #         else
-      #           render jsonapi_errors: article.errors
-      #         end
-      #       end
-        
-      #       # ...
       #     end
-  
-      def json_api_deserialize(callback_method: 'before_action', key: , lid_key: 'lid', lid_regex: 'local', **callback_options)
-        unless [String, Symbol, Proc].include?(key.class)
-          raise TypeError.new("key must be String, Symbol or Proc, got #{key.class}")
-        end
-
-        public_send(callback_method, callback_options) do |ctx|
-          raw_jsonapi = ctx.params['raw_jsonapi']
-          key = key.is_a?(Proc) ? key.call(raw_jsonapi) : key
-          
-          ctx.params = ctx.params.merge({
-            "#{key}": self.class.send('deep_deserialize', raw_jsonapi, lid_key, lid_regex)
-          })
-        end
-        
-      end
+      
+      #     def create
+      #       article = Article.new(params[:article])
+      
+      #       if article.save
+      #         render jsonapi: article
+      #       else
+      #         render jsonapi_errors: article.errors
+      #       end
+      #     end
+      
+      #     # ...
+      #   end
   
       private
     
-      def deep_deserialize(resource, lid_key, lid_regex)
+      def deep_deserialize_jsonapi(resource, lid_key, lid_regex)
         data = resource.key?('data') ? resource['data'] : resource
         included = resource['included']
 
@@ -64,10 +55,10 @@ module RailsJSONAPI
   
           grouped_by_type.each do |type, group|
             if klass_deserializer.has_one_rel_blocks[type.singularize]
-              deserialized["#{type.singularize}_attributes".to_sym] = deep_deserialize(group[0], lid_key, lid_regex)
+              deserialized["#{type.singularize}_attributes".to_sym] = deep_deserialize_jsonapi(group[0], lid_key, lid_regex)
             elsif klass_deserializer.has_many_rel_blocks[type]
               deserialized["#{type}_attributes".to_sym] = group.map do |r|
-                deep_deserialize(r, lid_key, lid_regex)
+                deep_deserialize_jsonapi(r, lid_key, lid_regex)
               end
             end
           end
