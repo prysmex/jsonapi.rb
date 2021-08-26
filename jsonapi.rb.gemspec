@@ -9,9 +9,9 @@ Gem::Specification.new do |spec|
   spec.authors       = ['Stas Suscov']
   spec.email         = ['stas@nerd.ro']
 
-  spec.summary       = 'Rails integration for jsonapi-serializer and jsonapi-deserializable'
+  spec.summary       = 'Rails jsonapi by integrating jsonapi-serializer and jsonapi-deserializable'
   spec.description   = (
-    'Rails integration for jsonapi-serializer and jsonapi-deserializable'
+    'Rails jsonapi by integrating jsonapi-serializer and jsonapi-deserializable'
   )
   spec.homepage      = 'https://github.com/prysmex/jsonapi.rb'
   spec.license       = 'MIT'
@@ -28,9 +28,9 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'bundler'
   spec.add_development_dependency 'rails', ENV['RAILS_VERSION']
   spec.add_development_dependency 'rspec', '~> 3.0'
-  spec.add_development_dependency 'rspec-rails'
-  spec.add_development_dependency 'jsonapi-rspec'
-  spec.add_development_dependency 'rubocop-rails_config'
-  spec.add_development_dependency 'rubocop'
-  spec.add_development_dependency 'rubocop-performance'
+  # spec.add_development_dependency 'rspec-rails'
+  # spec.add_development_dependency 'jsonapi-rspec'
+  # spec.add_development_dependency 'rubocop'
+  # spec.add_development_dependency 'rubocop-rails_config'
+  # spec.add_development_dependency 'rubocop-performance'
 end

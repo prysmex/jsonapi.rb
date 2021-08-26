@@ -3,7 +3,11 @@
 Here are some _codes_ to help you build your next JSON:API compliable application
 easier and faster.
 
-## But why?
+## ToDo
+
+* Uncomment and test `RailsJSONAPI::MediaTypeFilter`, add to the `RailsJSONAPI::Rails::Railtie`#initializer
+
+## Motivation
 
 It's quite a hassle to setup a Ruby (Rails) web application to use and follow
 the JSON:API specifications.
@@ -12,19 +16,20 @@ The idea is simple, JSONAPI.rb offers an easy way to confiture your application
 with code that contains no _magic_ and with little code!
 
 The available features include:
- * object serialization (powered by Fast JSON API)
- * [error handling](https://jsonapi.org/format/#errors) (parameters,
-   validation, generic errors)
- * fetching of the data (support for
-   [includes](https://jsonapi.org/format/#fetching-includes) and
-   [sparse fields](https://jsonapi.org/format/#fetching-sparse-fieldsets))
-   
-ToDo:
- * deserialization
 
-## But how?
+* jsonapi renderer (powered by Fast JSON API)
+  * sparse fields
+  * includes
+* jsonapi_errors renderer
+* error handling in controller
+* error serializers
+  * generic
+  * active model
+* deserialization (with support for nested deserialization and local-id!)
 
-Mainly by leveraging [Fast JSON API](https://github.com/Netflix/fast_jsonapi)
+## How
+
+Mainly by leveraging [Fast JSON API](https://github.com/Netflix/fast_jsonapi) and [jsonapi-deserializable](https://github.com/jsonapi-rb/jsonapi-deserializable)
 Thanks to everyone who worked on these amazing projects!
 
 ## Installation
@@ -45,100 +50,131 @@ Or install it yourself as:
 
 ## Usage
 
- * [Object serialization](#object-serialization)
- * [Collection meta](#collection-meta)
- * [Error handling](#error-handling)
- * [Includes and sparse fields](#includes-and-sparse-fields)
+This gem contains a `Rails::Railtie` that will:
 
----
+* register the jsonapi mime type **'application/vnd.api+json'**
+* register a parameter parser that will **nest jsonapi request params under the key raw_jsonapi**
+* register a **jsonapi** renderer to controllers
+* register a **jsonapi_errors** renderer to controllers
 
-To enable the support for Rails, add this to an initializer:
+Assuming you have a model
 
 ```ruby
-# config/initializers/jsonapi.rb
-require 'jsonapi'
-
-JSONAPI::Rails.install!
+class User < ActiveRecord::Base
+  #local id sent by API client, optional
+  attr_accessor :lid
+end
 ```
 
-This will register the mime type and the `jsonapi` and `jsonapi_errors`
-renderers.
+Now lets define our first serializer and deserializer
 
-### Object serialization
-
-The `jsonapi` renderer will try to guess and resolve the serializer class based
-on the object class, and if it is a collection, based on the first item in the
-collection.
-
-The naming scheme follows the `ModuleName::ClassNameSerializer` for an instance
-of the `ModuleName::ClassName`.
-
-Please follow the
-[Fast JSON API guide](https://github.com/Netflix/fast_jsonapi#serializer-definition)
+see [Fast JSON API guide](https://github.com/Netflix/fast_jsonapi#serializer-definition)
 on how to define a serializer.
 
-To provide a different naming scheme implement the `jsonapi_serializer_class`
-method in your controller.
+```ruby
+# app/serializers/user_serializer.rb
+
+class UserSerializer
+  include FastJsonapi::ObjectSerializer
+end
+```
+
+```ruby
+# app/deserializable/deserializable_user.rb
+
+class DeserializableUser < JSONAPI::Deserializable::Resource
+  type
+  id
+  attributes
+end
+```
+
+### jsonapi Renderer
+
+By default, a serializer class will be *guessed* when using the`jsonapi` renderer depending on the class of the resource to be rendered. If the resource is a collection, it will use the item's class. An instance of `ClassName` will resolve a `ClassNameSerializer` serializer
+
+You can also specify which serializer to use at a controller level by implementing the `jsonapi_serializer_class` hook method or by passing the **serializer_class** option.
 
 Here's an example:
+
 ```ruby
-class CustomNamingController < ActionController::Base
+class UserController < ActionController::Base
 
   # ...
 
+  # override at action level with serializer_class
+  def show
+    # ...
+    render jsonapi: @user, {serializer_class: OtherSerializer}
+  end
+
   private
 
+  # controller level hook
   def jsonapi_serializer_class(resource, is_collection)
-    JSONAPI::Rails.serializer_class(resource, is_collection)
-  rescue NameError
-    # your serializer class naming implementation
+    YourCustomSerializer
   end
+  
 end
 ```
 
-To provide extra parameters to the serializer,
-implement the `jsonapi_serializer_params` method.
+Here is the list of common options you can pass to the `jsonapi` renderer:
 
-Here's an example:
+* is_collection
+* serializer_class
+
+It also supports any other options or params to be passed to the serializer
+
+#### Default serializer options
+
+Here is a list of hooks that allow you to defined controller level defaults for your serializer options
+
+| serializer option | hook            |
+| --------------- | --------------- |
+| params | jsonapi_serializer_params |
+| meta | jsonapi_meta |
+| links | jsonapi_links |
+| fields | jsonapi_fields |
+| include | jsonapi_include |
+
 ```ruby
-class CustomSerializerParamsController < ActionController::Base
+class UserController < ActionController::Base
 
-  # ...
+  # jsonapi_meta hook is called
+  def index_1
+    render jsonapi: @user
+  end
+
+  # by default jsonapi_meta hook is not called when its option is defined at
+  # the action level. Use force_jsonapi_hooks: true to force call
+  def index_2
+    render jsonapi: @user, { meta: {some_key: 'test'} }
+  end
 
   private
 
-  def jsonapi_serializer_params
-    {
-      first_name_upcase: params[:upcase].present?
-    }
+  def jsonapi_meta(resource, meta = {})
+    meta[:total] = resource.count if resource.respond_to?(:count)
+    meta
   end
+  
 end
 ```
 
-#### Collection meta
+If you want to skip the default hooks on a specific controller action you can use the **skip_jsonapi_hooks** option
 
-To provide meta information for a collection, provide the `jsonapi_meta`
-controller method.
+#### sparse fields and includes
 
-Here's an example:
+includint `RailsJSONAPI::Controller::Utils` into your controller will give you access to
 
-```ruby
-class MyController < ActionController::Base
-  def index
-    render jsonapi: Model.all
-  end
+* jsonapi_include_param
+* jsonapi_fields_param
 
-  private
+### jsonapi_errors Renderer
 
-  def jsonapi_meta(resources)
-    { total: resources.count } if resources.respond_to?(:count)
-  end
-end
-```
+### Controller Error Handling
 
-### Error handling
-
-`JSONAPI::Errors` provides a basic error handling. It will generate a valid
+<!-- `RailsJSONAPI::Controller::Errors` provides a basic error handling. It will generate a valid
 error response on exceptions from strong parameters, on generic errors or
 when a record is not found.
 
@@ -171,118 +207,11 @@ class MyController < ActionController::Base
     super(exception)
   end
 end
-```
-
-### _Includes_ and sparse fields
-
-`JSONAPI::Fetching` provides support on inclusion of related resources and
-serialization of only specific fields.
-
-Here's an example:
-
-```ruby
-class MyController < ActionController::Base
-  include JSONAPI::Fetching
-
-  def index
-    render jsonapi: Model.all
-  end
-
-  private
-
-  # Overwrite/whitelist the includes
-  def jsonapi_include
-    super & ['wanted_attribute']
-  end
-end
-```
-
-### Filtering and sorting
-
-`JSONAPI::Filtering` uses the power of
-[Ransack](https://github.com/activerecord-hackery/ransack#search-matchers)
-to filter and sort over a collection of records.
-The support is pretty extended and covers also relationships and composite
-matchers.
-
-Here's an example:
-
-```ruby
-class MyController < ActionController::Base
-  include JSONAPI::Filtering
-
-  def index
-    allowed = [:model_attr, :relationship_attr]
-
-    jsonapi_filter(Model.all, allowed) do |filtered|
-      render jsonapi: filtered.result
-    end
-  end
-end
-```
-
-This allows you to run queries like:
-
-```bash
-$ curl -X GET \
-  /api/resources?filter[model_attr_or_relationship_attr_cont_any]=value,name\
-  &sort=-model_attr,relationship_attr
-```
-
-#### Sorting using expressions
-
-You can use basic aggregations like `min`, `max`, `avg`, `sum` and `count`
-when sorting. This is an optional feature since SQL aggregations require
-grouping. To enable expressions along with filters, use the option flags:
-
-```ruby
-options = { sort_with_expressions: true }
-jsonapi_filter(User.all, allowed_fields, options) do |filtered|
-  render jsonapi: result.group('id').to_a
-end
-```
-
-This allows you to run queries like:
-
-```bash
-$ curl -X GET /api/resources?sort=-model_attr_sum
-```
-
-<!-- ### Pagination
-
-`JSONAPI::Pagination` provides support for paginating model record sets as long
-as enumerables.
-
-Here's an example:
-
-```ruby
-class MyController < ActionController::Base
-  include JSONAPI::Pagination
-
-  def index
-    jsonapi_paginate(Model.all) do |paginated|
-      render jsonapi: paginated
-    end
-  end
-end
-```
-
-This will generate the relevant pagination _links_.
-
-If you want to add the pagination information to your meta,
-use the `jsonapi_pagination_meta` method:
-
-```ruby
-  def jsonapi_meta(resources)
-    pagination = jsonapi_pagination_meta(resources)
-
-    { pagination: pagination } if pagination.present?
-  end
 ``` -->
 
-### Deserialization
+### Controller Deserialization
 
-`JSONAPI::Deserialization` provides a helper to transform a `JSONAPI` document
+<!-- `JSONAPI::Deserialization` provides a helper to transform a `JSONAPI` document
 into a flat dictionary that can be used to update an `ActiveRecord::Base` model.
 
 Here's an example using the `jsonapi_deserialize` helper:
@@ -314,29 +243,7 @@ This functionality requires support for _inflections_. If your project uses
 `active_support` or `rails` you don't need to do anything. Alternatively, we will
 try to load a lightweight alternative to `active_support/inflector` provided
 by the `dry/inflector` gem, please make sure it's added if you want to benefit
-from this feature.
-
-## Development
-
-After checking out the repo, run `bundle` to install dependencies.
-
-Then, run `rake spec` to run the tests.
-
-To install this gem onto your local machine, run `bundle exec rake install`.
-
-To release a new version, update the version number in `version.rb`, and then
-run `bundle exec rake release`, which will create a git tag for the version,
-push git commits and tags, and push the `.gem` file to
-[rubygems.org](https://rubygems.org).
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at
-https://github.com/stas/jsonapi.rb
-
-This project is intended to be a safe, welcoming space for collaboration, and
-contributors are expected to adhere to the
-[Contributor Covenant](http://contributor-covenant.org) code of conduct.
+from this feature. -->
 
 ## License
 
