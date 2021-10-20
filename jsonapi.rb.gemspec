@@ -21,7 +21,7 @@ Gem::Specification.new do |spec|
   end
   spec.require_paths = ['lib']
 
-  spec.add_dependency 'jsonapi-deserializable', '0.2.0'
+  spec.add_dependency 'jsonapi-deserializable', '~> 0'
   spec.add_dependency 'jsonapi-serializer', '~> 2.2'
   spec.add_dependency 'rack'
 
