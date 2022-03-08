@@ -77,6 +77,7 @@ module RailsJSONAPI
         register_mime_type
         register_parameter_parser
         register_jsonapi_renderer
+        register_multimodel_jsonapi_renderer
         register_jsonapi_errors_renderer
 
         # app.middleware.use MediaTypeFilter
@@ -111,11 +112,13 @@ module RailsJSONAPI
 
           # Options that can be passed when calling the renderer
           #
-          # is_collection
-          # serializer_class
-          # skip_jsonapi_hooks
-          # force_jsonapi_hooks
-          # any other options or params to be passed to the serializer class
+          # @yieldparam [Object,Array<Object>] resource
+          # @yieldparam [Hash] options
+          # @option options [Boolean] :is_collection
+          # @option options [Class] :serializer_class
+          # @option options [Boolean] :skip_jsonapi_hooks
+          # @option options [Boolean] :force_jsonapi_hooks
+          # *any other options for the serializer class
           ActionController::Renderers.add(:jsonapi) do |resource, options|
 
             self.content_type ||= Mime[:jsonapi]
@@ -143,14 +146,68 @@ module RailsJSONAPI
   
             # get serializer class
             serializer_class = if options.key?(:serializer_class)
-                options.delete(:serializer_class)
-              elsif respond_to?(:jsonapi_serializer_class, true)
-                jsonapi_serializer_class(resource, many)
-              else
-                RailsJSONAPI::Rails.infer_serializer_from_resource(resource, many)
-              end
+              options.delete(:serializer_class)
+            elsif respond_to?(:jsonapi_serializer_class, true)
+              jsonapi_serializer_class(resource, many)
+            else
+              RailsJSONAPI::Rails.infer_serializer_from_resource(resource, many)
+            end
             
             serializer_class.new(resource, options).serializable_hash.to_json
+          end
+
+        end
+      end
+
+      # Registers the multi jsonapi renderer
+      # 
+      def register_multimodel_jsonapi_renderer
+        ActiveSupport.on_load(:action_controller) do
+
+          # Options that can be passed when calling the renderer
+          #
+          # @yieldparam [Object,Array<Object>] resource
+          # @yieldparam [Hash] options
+          # @option options [Hash<Class>] :multimodel_jsonapi
+          #   - serializer_class_proc [Class,Proc]
+          #     each class may have the following keys:
+          #       - :type [Symbol]
+          #       - :id_attr [Symbol]
+          #       - :serializer_class [Class]
+          # *any other options for the serializer class
+          ActionController::Renderers.add(:multimodel_jsonapi) do |resource, options|
+            multimodel_options = options.delete(:multimodel_options) || {}
+            multimodel_options[:serializer_class_proc] ||= ->(klass_name){ "#{klass_name}Serializer" }
+
+            payload = {data: [], included: []}
+          
+            # group so we can serialize them together by type
+            grouped_records = resource.group_by { |r| r.class.name }
+            
+            # serialize data and add it to the payload
+            grouped_records.each do |klass_name, records|
+              serialized_data = multimodel_options[:serializer_class_proc].call(klass_name)
+                  .safe_constantize.new(records, options)
+                  .serializable_hash
+          
+              payload[:data].concat(serialized_data[:data]) if serialized_data[:data]
+              payload[:included].concat(serialized_data[:included]) if serialized_data[:included]
+            end
+          
+            # sort the data based on original resource
+            payload[:data].sort! do |obj|
+              obj_type = obj[:type].to_s.underscore.singularize
+              obj_id = obj[:id].to_s
+              
+              resource.index do |r|
+                name = multimodel_options.dig(r.class, :type)&.to_s || r.class.name.underscore
+                id_attr = multimodel_options.dig(r.class, :id_attr) || :id
+          
+                r.public_send(id_attr).to_s == obj_id && name == obj_type
+              end
+            end
+            
+            send_data payload.to_json, type: Mime[:jsonapi]
           end
         end
       end
