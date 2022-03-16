@@ -42,15 +42,7 @@ module RailsJSONAPI
           resource.class
         end
 
-      class_to_serializer_class(klass)
-    end
-
-    # Resolves a serializer class from a class
-    #
-    # @param [Class] klass
-    # @return [Class] serializer
-    def self.class_to_serializer_class(klass)
-      "#{klass.name}Serializer".constantize
+      RailsJSONAPI.class_to_serializer_proc.call(klass)
     end
 
     #
@@ -259,7 +251,7 @@ module RailsJSONAPI
                 elsif respond_to?(:jsonapi_serializer_class, true)
                   jsonapi_serializer_class(record, many)
                 else
-                  RailsJSONAPI::Rails.class_to_serializer_class(record.class)
+                  RailsJSONAPI.class_to_serializer_proc.call(klass)
                 end
               
               # add params to options

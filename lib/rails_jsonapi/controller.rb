@@ -96,6 +96,7 @@ module RailsJSONAPI
 
       module ClassMethods
         def deep_deserialize_jsonapi(resource, lid_key, lid_regex)
+          resource = resource.as_json if resource.is_a?(ActionController::Parameters)
           RailsJSONAPI::DeepDeserializer.new(resource, lid_key, lid_regex)
               .deep_deserialize
         end

@@ -15,7 +15,7 @@ module RailsJSONAPI
       included = resource['included']
 
       normalize_resource(data)
-      klass_deserializer = deserializer_for(data)
+      klass_deserializer = RailsJSONAPI.type_to_deserializer_proc.call(data['type'])
       deserialized = klass_deserializer.call(data)
       
       # remove id if local
@@ -43,7 +43,7 @@ module RailsJSONAPI
 
     private
   
-    # Transforms *attributes* and *relationships* with underscre and sets the local-id into attributes
+    # Transforms *attributes* and *relationships* with underscore and sets the local-id into attributes
     #
     # @todo is underscoring necessary? can this be handled by jsonapi-deserializable?
     #
@@ -53,15 +53,6 @@ module RailsJSONAPI
       data['attributes'] = data['attributes'].transform_keys{|k| k.underscore } if data['attributes'].present?
       data['relationships'] = data['relationships'].transform_keys{|k| k.underscore } if data['relationships'].present?
       data['attributes'][@lid_key] = data[@lid_key]
-    end
-  
-    # Returns a deserializable class for a jsonapi type
-    # @param [Hash] data must have a *type* key
-    #
-    # @return [Class] jsonapi-deserializable class
-    def deserializer_for(data)
-      type = data['type'].underscore
-      "Deserializable#{type.classify}".constantize
     end
 
   end

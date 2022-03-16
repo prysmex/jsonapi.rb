@@ -80,9 +80,9 @@ end
 ```
 
 ```ruby
-# app/deserializable/deserializable_user.rb
+# app/deserializers/user_deserializer.rb
 
-class DeserializableUser < JSONAPI::Deserializable::Resource
+class UserDeserializer < JSONAPI::Deserializable::Resource
   type
   id
   attributes
