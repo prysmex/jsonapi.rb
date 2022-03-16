@@ -251,7 +251,7 @@ module RailsJSONAPI
                 elsif respond_to?(:jsonapi_serializer_class, true)
                   jsonapi_serializer_class(record, many)
                 else
-                  RailsJSONAPI.class_to_serializer_proc.call(klass)
+                  RailsJSONAPI.class_to_serializer_proc.call(record.class)
                 end
               
               # add params to options
