@@ -132,10 +132,15 @@ module RailsJSONAPI
   
             # If it's an empty collection, return it
             many = options[:is_collection] || RailsJSONAPI::Rails.is_collection?(resource)
-            if many && !resource.any?
+
+            # preload data
+            data = many ? resource.to_a : resource
+
+            # return early
+            if many && data.empty?
               return options.slice(:meta, :links).merge(data: []).to_json
             end
-  
+
             # get serializer class
             serializer_class = if options.key?(:serializer_class)
               options.delete(:serializer_class)
@@ -144,8 +149,8 @@ module RailsJSONAPI
             else
               RailsJSONAPI::Rails.infer_serializer_from_resource(resource, many)
             end
-            
-            serializer_class.new(resource, options).serializable_hash.to_json
+
+            serializer_class.new(data, options).serializable_hash.to_json
           end
 
         end
