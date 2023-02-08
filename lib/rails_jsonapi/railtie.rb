@@ -165,15 +165,18 @@ module RailsJSONAPI
           #
           # @yieldparam [Object,Array<Object>] resource
           # @yieldparam [Hash] options
-          # @option options [Hash<Class>] :multimodel_jsonapi
+          # @option options [Hash<Class>] :multimodel_options
           #   - serializer_class_proc [Class,Proc]
-          #     each class may have the following keys:
-          #       - :type [Symbol]
-          #       - :id_attr [Symbol]
-          #       - :serializer_class [Class]
+          #   - klass, each class may have the following keys:
+          #       - :sort_type [Symbol]
+          #       - :sort_id_attr [Symbol]
+          #       - :options
           # *any other options for the serializer class
           ActionController::Renderers.add(:multimodel_jsonapi) do |resource, options|
+
             multimodel_options = options.delete(:multimodel_options) || {}
+
+            # root defaults
             multimodel_options[:serializer_class_proc] ||= ->(klass_name){ "#{klass_name}Serializer" }
 
             payload = {data: [], included: []}
@@ -183,8 +186,15 @@ module RailsJSONAPI
             
             # serialize data and add it to the payload
             grouped_records.each do |klass_name, records|
+
+              # by klass defaults
+              klass_options = multimodel_options[klass_name.safe_constantize] ||= {}
+              klass_options[:sort_type] ||= klass_name.underscore
+              klass_options[:sort_id_attr] ||= :id
+              klass_options[:options] ||= {}
+
               serialized_data = multimodel_options[:serializer_class_proc].call(klass_name)
-                  .safe_constantize.new(records, options)
+                  .safe_constantize.new(records, klass_options[:options])
                   .serializable_hash
           
               payload[:data].concat(serialized_data[:data]) if serialized_data[:data]
@@ -192,15 +202,16 @@ module RailsJSONAPI
             end
           
             # sort the data based on original resource
+            cache = {}
             payload[:data].sort! do |obj|
-              obj_type = obj[:type].to_s.underscore.singularize
+              obj_type = cache[obj[:type]] ||= obj[:type].to_s.underscore.singularize
               obj_id = obj[:id].to_s
               
               resource.index do |r|
-                name = multimodel_options.dig(r.class, :type)&.to_s || r.class.name.underscore
-                id_attr = multimodel_options.dig(r.class, :id_attr) || :id
+                sort_type = multimodel_options.dig(r.class, :sort_type)
+                sort_id_attr = multimodel_options.dig(r.class, :sort_id_attr)
           
-                r.public_send(id_attr).to_s == obj_id && name == obj_type
+                r.public_send(sort_id_attr).to_s == obj_id && sort_type.to_s == obj_type
               end
             end
             
