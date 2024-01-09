@@ -8,6 +8,8 @@ module RailsJSONAPI
     #   [...]
     # ]
     #
+    # @note requires record to respond to +lid_id+
+    #
     class ActiveModel < Base
       set_id :object_id
       set_type :error
@@ -40,7 +42,7 @@ module RailsJSONAPI
           attribute = path.pop
           record = get_record_from_errors_path(params[:record], path)
           if record
-             "(#{I18n.t("activerecord.models.#{record.class.name.underscore}.one")} #{(record.id || record.lid_id)}) " + record.errors.full_message(attribute, error_msg)
+             "(#{I18n.t("activerecord.models.#{record.class.name.underscore}.one")} #{record.id || record.try(:lid_id)}) " + record.errors.full_message(attribute, error_msg)
           else
             errors_object.full_message(error_key, error_msg)
           end

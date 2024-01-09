@@ -1,7 +1,7 @@
 module RailsJSONAPI
   class DeepDeserializer
 
-    # @param [Hash] resource jsonapi payload
+    # @param [Hash{String => *}] resource jsonapi payload
     # @param [String] lid_key
     # @param [String] lid_regex
     def initialize(resource, lid_key, lid_regex)
@@ -10,12 +10,16 @@ module RailsJSONAPI
       @lid_regex = lid_regex
     end
 
+    # @param [Hash{String => *}] resource jsonapi payload
+    # @return [Hash{Symbol => *}]
     def deep_deserialize(resource = @resource)
       data = resource.key?('data') ? resource['data'] : resource
       included = resource['included']
 
       normalize_resource(data)
       klass_deserializer = RailsJSONAPI.type_to_deserializer_proc.call(data['type'])
+
+      # Hash{Symbol => *}
       deserialized = klass_deserializer.call(data)
       
       # remove id if local
@@ -43,11 +47,11 @@ module RailsJSONAPI
 
     private
   
-    # Transforms *attributes* and *relationships* with underscore and sets the local-id into attributes
+    # Transforms *attributes* and *relationships* with underscore and sets the local id *lid* into attributes
     #
     # @todo is underscoring necessary? can this be handled by jsonapi-deserializable?
     #
-    # @param [Hash] data
+    # @param [Hash{String => *}] data
     # @return [void]
     def normalize_resource(data)
       data['attributes'] = data['attributes'].transform_keys{|k| k.underscore } if data['attributes'].present?

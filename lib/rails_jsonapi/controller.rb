@@ -54,7 +54,7 @@ module RailsJSONAPI
       #
       # @example `GET /resource?fields[relationship]=id,created_at`
       #
-      # @return [Hash]
+      # @return [Hash|ActiveSupport::HashWithIndifferentAccess]
       def jsonapi_fields_param
         return {} unless params[:fields].respond_to?(:each_pair)
   
@@ -95,6 +95,10 @@ module RailsJSONAPI
       end
 
       module ClassMethods
+        # @param resource [ActionController::Parameters]
+        # @param lid_key [String]
+        # @param lid_regex [Regexp]
+        # @return [Hash{Symbol => *}]
         def deep_deserialize_jsonapi(resource, lid_key, lid_regex)
           resource = resource.as_json if resource.is_a?(ActionController::Parameters)
           RailsJSONAPI::DeepDeserializer.new(resource, lid_key, lid_regex)

@@ -12,6 +12,7 @@ module RailsJSONAPI
 
   @class_to_serializer_proc = ->(klass){ "#{klass.name}Serializer".constantize }
 
+  # deserializer must return [Hash{Symbol => *}]
   @type_to_deserializer_proc = ->(type){ "#{type.underscore.classify}Deserializer".constantize }
 
   class << self
