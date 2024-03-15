@@ -1,36 +1,71 @@
-# inherit_gem:
-#   rubocop-rails_config:
-#     - config/rails.yml
+# see example at https://gist.github.com/jhass/a5ae80d87f18e53e7b56
 
-# require: rubocop-performance
+# <% unless ENV['BYPASS_RUBOCOP_TODO'] %>
+# inherit_from:
+# <% else %>
+# inherit_from:
+#   - '.rubocop-todo.yml'
+# <% end %>
 
-# Performance:
-#   Enabled: true
+inherit_from:
+  - .rubocop_todo.yml
 
-# Rails:
-#   Enabled: true
+require:
+  - rubocop-rake
 
-# Style/StringLiterals:
-#   Enabled: true
-#   EnforcedStyle: single_quotes
+AllCops:
+  NewCops: enable
+  # TargetRubyVersion: 2.7.8
+  # TargetRailsVersion: 6.1.4
+  # Exclude:
+  #   - 'Gemfile.lock'
 
-# Style/FrozenStringLiteralComment:
-#   Enabled: false
+Naming/VariableNumber:
+  Enabled: false
 
-# Layout/LineLength:
-#   Max: 80
+Layout/SpaceInsideHashLiteralBraces:
+  Enabled: false
 
-# Layout/IndentationConsistency:
-#   EnforcedStyle: normal
+Layout/EmptyLinesAroundModuleBody:
+  EnforcedStyle: empty_lines_special
+  Enabled: false
 
-# Style/BlockDelimiters:
-#   Enabled: true
+Layout/TrailingEmptyLines:
+  Enabled: false
+  EnforcedStyle: final_blank_line
 
-# Rails/ApplicationRecord:
-#   Enabled: false
+Layout/EmptyLinesAroundClassBody:
+  Enabled: false
 
-# Rails/BelongsTo:
-#   Enabled: false
+Style/RaiseArgs:
+  EnforcedStyle: compact
 
-# Rails/ApplicationController:
-#   Enabled: false
+Naming/MethodParameterName:
+  Enabled: false
+
+Naming/VariableName:
+  Enabled: false
+
+Layout/FirstHashElementIndentation:
+  Enabled: false
+
+Layout/CaseIndentation:
+  EnforcedStyle: end
+
+Metrics/ParameterLists:
+  Enabled: false 
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+
+Style/TrailingUnderscoreVariable:
+  Enabled: false
+
+Layout/IndentationWidth:
+  Enabled: false
+
+Layout/EndAlignment:
+  Enabled: false
+
+Layout/ElseAlignment:
+  Enabled: false

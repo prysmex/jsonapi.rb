@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rails_jsonapi/error_serializer/base'
 require 'rails_jsonapi/error_serializer/active_model'
 require 'rails_jsonapi/controller'
@@ -8,12 +10,12 @@ require 'rails_jsonapi/version'
 
 module RailsJSONAPI
   # JSONAPI media type.
-  MEDIA_TYPE = 'application/vnd.api+json'.freeze
+  MEDIA_TYPE = 'application/vnd.api+json'
 
-  @class_to_serializer_proc = ->(klass){ "#{klass.name}Serializer".constantize }
+  @class_to_serializer_proc = ->(klass) { "#{klass.name}Serializer".constantize }
 
   # deserializer must return [Hash{Symbol => *}]
-  @type_to_deserializer_proc = ->(type){ "#{type.underscore.classify}Deserializer".constantize }
+  @type_to_deserializer_proc = ->(type) { "#{type.underscore.classify}Deserializer".constantize }
 
   class << self
 
