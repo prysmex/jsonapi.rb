@@ -12,6 +12,7 @@ inherit_from:
 
 require:
   - rubocop-rake
+  - rubocop-performance
 
 AllCops:
   NewCops: enable
@@ -57,9 +58,6 @@ Metrics/ParameterLists:
 
 Layout/MultilineMethodCallIndentation:
   EnforcedStyle: indented
-
-Style/TrailingUnderscoreVariable:
-  Enabled: false
 
 Layout/IndentationWidth:
   Enabled: false

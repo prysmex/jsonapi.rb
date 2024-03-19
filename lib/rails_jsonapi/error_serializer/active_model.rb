@@ -4,7 +4,7 @@ module RailsJSONAPI
   module ErrorSerializer
     # Serializer that handles ActiveModel::Errors objects
     #
-    # first argument of .attribute is:
+    # first argument of +attribute+ is:
     # [
     #   [:email, {:error=>:blank}, "no puede estar en blanco"]
     #   [...]
@@ -25,17 +25,15 @@ module RailsJSONAPI
       end
 
       attribute :code do |object, _|
-        _, error_hash, _ = object
-
-        error_hash[:error] || :invalid
+        object[1][:error] || :invalid
       end
 
       attribute :detail do |object, params|
-        error_key, _, error_msg = object
+        error_key, _error_hash, error_msg = object
         errors_object = params[:record].errors
 
         error_key_s = error_key.to_s
-        if error_key_s.match(/\./)
+        if error_key_s.include?('.')
           # contains a '.' (nested attributes)
           # has_many :recognitions, dependent: :destroy, index_errors: true
           path = error_key_s.split('.')
@@ -56,7 +54,7 @@ module RailsJSONAPI
       end
 
       attribute :source do |object, params|
-        error_key, _, _ = object
+        error_key = object[0]
         record_serializer = params[:record_serializer]
         attrs = (record_serializer.attributes_to_serialize || {}).keys
         rels = (record_serializer.relationships_to_serialize || {}).keys

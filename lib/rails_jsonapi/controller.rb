@@ -49,7 +49,7 @@ module RailsJSONAPI
       def json_api_request?
         request
           .try(:content_mime_type)
-          .try(:instance_variable_get, '@string') == ::RailsJSONAPI::MEDIA_TYPE
+          .try(:instance_variable_get, :@string) == ::RailsJSONAPI::MEDIA_TYPE
       end
 
       # Extracts and formats 'fields' jsonapi param
@@ -67,7 +67,7 @@ module RailsJSONAPI
         end
 
         params[:fields].each_with_object(base_hash) do |(k, v), obj|
-          obj[k] = v.to_s.split(',').map(&:strip).compact
+          obj[k] = v.to_s.split(',') # .map!(&:strip)
         end
       end
 
@@ -75,18 +75,17 @@ module RailsJSONAPI
       #
       # @example `GET /resource?include=relationship_1,relationship_2`
       #
-      # @return [Array,String]
+      # @return [Array<String>]
       def jsonapi_include_param
-        value = case params['include']
-          when String
-            params['include'].to_s.split(',')
-          when Array
-            params['include']
-          else
-            []
-          end
-
-        value&.map(&:strip)&.compact
+        case params['include']
+        when String
+          params['include'].to_s.split(',')
+        when Array
+          params['include']
+        else
+          []
+        end
+        # .map(&:strip)
       end
     end
 

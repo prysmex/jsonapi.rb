@@ -239,7 +239,7 @@ module RailsJSONAPI
             many = options[:is_collection] || RailsJSONAPI::Rails.collection?(resource)
 
             if resource.is_a?(ActiveModel::Errors)
-              record = resource.instance_variable_get('@base')
+              record = resource.instance_variable_get(:@base)
               details = resource.details
               messages = resource.messages
 
