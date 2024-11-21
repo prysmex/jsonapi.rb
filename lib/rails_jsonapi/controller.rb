@@ -36,10 +36,7 @@ module RailsJSONAPI
     #   end
 
     def self.included(base)
-      base.public_send :include,
-                       Utils,
-                       Deserialization
-      Errors
+      base.include Utils, Deserialization #, Errors
     end
 
     module Utils

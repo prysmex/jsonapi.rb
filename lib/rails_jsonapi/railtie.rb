@@ -138,7 +138,7 @@ module RailsJSONAPI
             data = many ? resource.to_a : resource
 
             # return early
-            return options.slice(:meta, :links).merge(data: []).to_json if many && data.empty?
+            return Oj.dump(options.slice(:meta, :links).merge(data: []), mode: :compat) if many && data.empty?
 
             # get serializer class
             serializer_class = if options.key?(:serializer_class)
@@ -149,7 +149,7 @@ module RailsJSONAPI
               RailsJSONAPI::Rails.infer_serializer_from_resource(resource, many)
             end
 
-            serializer_class.new(data, options).serializable_hash.to_json
+            Oj.dump(serializer_class.new(data, options).serializable_hash, mode: :compat)
           end
         end
       end
@@ -210,7 +210,7 @@ module RailsJSONAPI
               end
             end
 
-            send_data payload.to_json, type: Mime[:jsonapi]
+            return Oj.dump(payload, mode: :compat), type: Mime[:jsonapi]
           end
         end
       end
@@ -238,7 +238,7 @@ module RailsJSONAPI
 
             many = options[:is_collection] || RailsJSONAPI::Rails.collection?(resource)
 
-            if resource.is_a?(ActiveModel::Errors)
+            value = if resource.is_a?(ActiveModel::Errors)
               record = resource.instance_variable_get(:@base)
               details = resource.details
               messages = resource.messages
@@ -270,15 +270,12 @@ module RailsJSONAPI
                 record_serializer:
               })
 
-              RailsJSONAPI::ErrorSerializer::ActiveModel.new(errors, options)
-                .serializable_hash
-                .to_json
+              RailsJSONAPI::ErrorSerializer::ActiveModel.new(errors, options).serializable_hash
             else
               resource = [resource] unless many
-              RailsJSONAPI::ErrorSerializer::Base.new(resource, options)
-                .serializable_hash
-                .to_json
+              RailsJSONAPI::ErrorSerializer::Base.new(resource, options).serializable_hash
             end
+            Oj.dump(value, mode: :compat)
           end
         end
       end

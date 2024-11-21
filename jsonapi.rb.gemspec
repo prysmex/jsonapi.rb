@@ -35,5 +35,6 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'jsonapi-deserializable', '~> 0'
   spec.add_dependency 'jsonapi-serializer', '~> 2.2'
+  spec.add_dependency 'oj', '~> 3'
   spec.add_dependency 'rack'
 end
