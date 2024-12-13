@@ -113,7 +113,7 @@ module RailsJSONAPI
           # @option options [Boolean] :force_jsonapi_hooks
           # *any other options for the serializer class
           ActionController::Renderers.add(:jsonapi) do |resource, options|
-            self.content_type ||= Mime[:jsonapi]
+            self.content_type = Mime[:jsonapi] if RailsJSONAPI.force_content_type || !content_type
 
             # call hooks
             unless options[:skip_jsonapi_hooks]
@@ -170,6 +170,8 @@ module RailsJSONAPI
           #       - :options
           # *any other options for the serializer class
           ActionController::Renderers.add(:multimodel_jsonapi) do |resource, options|
+            self.content_type = Mime[:jsonapi] if RailsJSONAPI.force_content_type || !content_type
+
             multimodel_options = options.delete(:multimodel_options) || {}
 
             # root defaults
@@ -210,7 +212,7 @@ module RailsJSONAPI
               end
             end
 
-            return Oj.dump(payload, mode: :compat), type: Mime[:jsonapi]
+            Oj.dump(payload, mode: :compat)
           end
         end
       end
@@ -234,7 +236,7 @@ module RailsJSONAPI
           #
           # - is_collection
           ActionController::Renderers.add(:jsonapi_errors) do |resource, options|
-            self.content_type ||= Mime[:jsonapi]
+            self.content_type = Mime[:jsonapi] if RailsJSONAPI.force_content_type || !content_type
 
             many = options[:is_collection] || RailsJSONAPI::Rails.collection?(resource)
 

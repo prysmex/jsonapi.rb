@@ -19,7 +19,7 @@ module RailsJSONAPI
 
   class << self
 
-    attr_accessor :class_to_serializer_proc, :type_to_deserializer_proc
+    attr_accessor :class_to_serializer_proc, :type_to_deserializer_proc, :force_content_type
 
     def configure
       yield self
