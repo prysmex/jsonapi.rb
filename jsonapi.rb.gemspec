@@ -37,4 +37,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'jsonapi-serializer', '~> 2.2'
   spec.add_dependency 'oj', '~> 3'
   spec.add_dependency 'rack'
+
+  # jsonapi-serializer always points to last version
+  # spec.add_development_dependency 'activerecord', '~> 7.2'
+  spec.add_dependency 'activesupport', '~> 7.2'
 end
