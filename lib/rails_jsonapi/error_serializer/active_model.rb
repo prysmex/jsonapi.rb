@@ -13,15 +13,17 @@ module RailsJSONAPI
     # @note requires record to respond to +lid_id+
     #
     class ActiveModel < Base
+      STATUS = 422
+
       set_id :object_id
       set_type :error
 
       attribute :status do
-        '422'
+        STATUS.to_s
       end
 
       attribute :title do
-        Rack::Utils::HTTP_STATUS_CODES[422]
+        Rack::Utils::HTTP_STATUS_CODES[STATUS]
       end
 
       attribute :code do |object, _|

@@ -15,9 +15,9 @@ module RailsJSONAPI
       set_type :error
 
       # define 'attribute's that support Object/Hash
-      %i[status source title detail].each do |attr_name|
-        attribute attr_name do |object, _params|
-          object.try(attr_name) || object.try(:fetch, attr_name, nil)
+      %i[id links status code title detail source meta].each do |name|
+        attribute name do |object, _params|
+          object.try(name) || object.try(:fetch, name, nil)
         end
       end
 
@@ -25,8 +25,11 @@ module RailsJSONAPI
       # Remap the root key to `errors`
       # @return [Hash]
       def serializable_hash
-        hash = super[:data] || []
-        { errors: hash.map { |error| error[:attributes] } }
+        super.then do |hash|
+          errors = (hash[:data] || []).map { |error| error[:attributes].select { |_k, v| v.present? } }
+
+          {errors:}
+        end
       end
 
     end
