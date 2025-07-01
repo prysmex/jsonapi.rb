@@ -94,12 +94,11 @@ module RailsJSONAPI
 
       module ClassMethods
         # @param resource [ActionController::Parameters]
-        # @param lid_key [String]
-        # @param lid_regex [Regexp]
+        # @param lid_key [String|NilClass]
         # @return [Hash{Symbol => *}]
-        def deep_deserialize_jsonapi(resource, lid_key, lid_regex)
+        def deep_deserialize_jsonapi(resource, *, **)
           resource = resource.as_json if resource.is_a?(ActionController::Parameters)
-          RailsJSONAPI::DeepDeserializer.new(resource, lid_key, lid_regex)
+          RailsJSONAPI::DeepDeserializer.new(resource, *, **)
             .deep_deserialize
         end
       end

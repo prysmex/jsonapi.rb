@@ -4,12 +4,10 @@ module RailsJSONAPI
   class DeepDeserializer
 
     # @param [Hash{String => *}] resource jsonapi payload
-    # @param [String] lid_key
-    # @param [String] lid_regex
-    def initialize(resource, lid_key, lid_regex)
+    # @param [String|NilClass] lid_key
+    def initialize(resource, lid_key)
       @resource = resource
       @lid_key = lid_key
-      @lid_regex = lid_regex
     end
 
     # @param [Hash{String => *}] resource jsonapi payload
@@ -23,9 +21,6 @@ module RailsJSONAPI
 
       # Hash{Symbol => *}
       deserialized = klass_deserializer.call(data)
-
-      # remove id if local
-      deserialized.delete(:id) if deserialized[:id]&.to_s&.match(@lid_regex)
 
       # handle nested included
       if included.present?
@@ -56,7 +51,7 @@ module RailsJSONAPI
     def normalize_resource(data)
       data['attributes'] = data['attributes'].transform_keys(&:underscore) if data['attributes'].present?
       data['relationships'] = data['relationships'].transform_keys(&:underscore) if data['relationships'].present?
-      data['attributes'][@lid_key] = data[@lid_key]
+      data['attributes'][@lid_key] = data[@lid_key] if @lid_key
     end
 
   end
