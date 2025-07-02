@@ -51,7 +51,9 @@ module RailsJSONAPI
     def normalize_resource(data)
       data['attributes'] = data['attributes'].transform_keys(&:underscore) if data['attributes'].present?
       data['relationships'] = data['relationships'].transform_keys(&:underscore) if data['relationships'].present?
-      data['attributes'][@lid_key] = data[@lid_key] if @lid_key
+      if @lid_key && (lid = data[@lid_key])
+        data['attributes'][@lid_key] = lid
+      end
     end
 
   end
