@@ -55,15 +55,6 @@ module RailsJSONAPI
     #
     class Railtie < ::Rails::Railtie
 
-      # maps an option key to a method (hook) name
-      JSONAPI_HOOKS_MAPPING = {
-        params: :jsonapi_serializer_params,
-        meta: :jsonapi_meta,
-        links: :jsonapi_links,
-        fields: :jsonapi_fields,
-        include: :jsonapi_include
-      }.freeze
-
       # call register methods on the Railtie
       #
       # @todo uncomment MediaTypeFilter middleware
@@ -94,7 +85,6 @@ module RailsJSONAPI
       # - sets content_type to the registered jsonapi mime type
       # - support jsonapi options hooks
       #   - default_jsonapi_options
-      #   - see JSONAPI_HOOKS_MAPPING
       # - serialize
       #   - pass serializer_class option
       #   - call jsonapi_serializer_class hook
@@ -110,7 +100,6 @@ module RailsJSONAPI
           # @option options [Boolean] :is_collection
           # @option options [Class] :serializer_class
           # @option options [Boolean] :skip_jsonapi_hooks
-          # @option options [Boolean] :force_jsonapi_hooks
           # *any other options for the serializer class
           ActionController::Renderers.add(:jsonapi) do |resource, options|
             self.content_type = Mime[:jsonapi] if RailsJSONAPI.force_content_type || !content_type
@@ -118,19 +107,21 @@ module RailsJSONAPI
             # call hooks
             unless options[:skip_jsonapi_hooks]
               # default_jsonapi_options
-              if respond_to?(:default_jsonapi_options, true)
-                options = (send(:default_jsonapi_options, resource, options) || {}).merge(options)
+              if respond_to?(:default_jsonapi_options, true) && (default_opts = send(:default_jsonapi_options, resource, options))
+                options = default_opts.merge(options)
               end
 
-              # call specific option hooks (JSONAPI_HOOKS_MAPPING) if defined
-              # if passed *options* has the key, the hook will not be called unless *force_jsonapi_hooks* is truthy
-              JSONAPI_HOOKS_MAPPING.each do |json_api_key, hook_name|
-                next if !respond_to?(hook_name, true) || (options.key?(json_api_key) && !options[:force_jsonapi_hooks])
+              # hook to handle fields param
+              if jsonapi_fields_param
+                respond_to?(:handle_jsonapi_fields_param, true) && send(:handle_jsonapi_fields_param, resource, options)
+              end
 
-                options[json_api_key] = send(hook_name, resource, options[hook_name])
+              # hook to handle include param
+              if jsonapi_include_param
+                respond_to?(:handle_jsonapi_include_param, true) && send(:handle_jsonapi_include_param, resource, options)
               end
             end
-
+            
             # If it's an empty collection, return it
             many = options[:is_collection] || RailsJSONAPI::Rails.collection?(resource)
 

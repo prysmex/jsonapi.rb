@@ -51,20 +51,14 @@ module RailsJSONAPI
 
       # Extracts and formats 'fields' jsonapi param
       #
-      # @example `GET /resource?fields[relationship]=id,created_at`
+      # @example `GET /resource?fields[model]=id,created_at`
       #
-      # @return [Hash|ActiveSupport::HashWithIndifferentAccess]
+      # @return [NilClass|Hash{String => Array<String>}]
       def jsonapi_fields_param
-        return {} unless params[:fields].respond_to?(:each_pair)
+        return unless params[:fields].respond_to?(:each_pair)
 
-        base_hash = if defined?(ActiveSupport::HashWithIndifferentAccess)
-          ActiveSupport::HashWithIndifferentAccess.new
-        else
-          {}
-        end
-
-        params[:fields].each_with_object(base_hash) do |(k, v), obj|
-          obj[k] = v.to_s.split(',') # .map!(&:strip)
+        params[:fields].as_json.transform_values do |v|
+          v.is_a?(String) ? v.split(',') : v
         end
       end
 
@@ -72,17 +66,14 @@ module RailsJSONAPI
       #
       # @example `GET /resource?include=relationship_1,relationship_2`
       #
-      # @return [Array<String>]
+      # @return [NilClass|Array<String>]
       def jsonapi_include_param
-        case params['include']
+        case (include = params['include'])
         when String
-          params['include'].to_s.split(',')
+          include.split(',')
         when Array
-          params['include']
-        else
-          []
+          include
         end
-        # .map(&:strip)
       end
     end
 

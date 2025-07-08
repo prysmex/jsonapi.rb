@@ -127,41 +127,38 @@ It also supports any other options or params to be passed to the serializer
 
 #### Default serializer options
 
-Here is a list of hooks that allow you to defined controller level defaults for your serializer options
-
-| serializer option | hook            |
-| --------------- | --------------- |
-| params | jsonapi_serializer_params |
-| meta | jsonapi_meta |
-| links | jsonapi_links |
-| fields | jsonapi_fields |
-| include | jsonapi_include |
+You can use `default_jsonapi_options` to define default options that will be passed to the renderer.
 
 ```ruby
 class UserController < ActionController::Base
 
-  # jsonapi_meta hook is called
+  # meta will be set from `default_jsonapi_options`
   def index_1
     render jsonapi: @user
   end
 
-  # by default jsonapi_meta hook is not called when its option is defined at
-  # the action level. Use force_jsonapi_hooks: true to force call
+  # if a `meta` was passed directly to the `render`, the meta returned from default_jsonapi_options will be ignored. You'll need to merge them manually with the `options` argument passed to `default_jsonapi_options`
   def index_2
-    render jsonapi: @user, { meta: {some_key: 'test'} }
+    render jsonapi: @user, meta: {some_key: 'test'}
   end
 
   private
 
-  def jsonapi_meta(resource, meta = {})
-    meta[:total] = resource.count if resource.respond_to?(:count)
-    meta
+  def default_jsonapi_options(_resource, _options)
+    case action_name
+    when 'index_1', 'index_2'
+      {
+        meta: {
+          total: resource.count
+        }
+      }
+    end
   end
   
 end
 ```
 
-If you want to skip the default hooks on a specific controller action you can use the **skip_jsonapi_hooks** option
+If you want to skip `default_jsonapi_options` on a specific action you can use the **skip_jsonapi_hooks** option
 
 #### sparse fields and includes
 
