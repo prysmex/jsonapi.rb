@@ -13,8 +13,12 @@ module RailsJSONAPI
     # @param [Hash{String => *}] resource jsonapi payload
     # @return [Hash{Symbol => *}]
     def deep_deserialize(resource = @resource)
+      if block_given?
+        new_resource = yield(resource)
+        resource = new_resource if new_resource
+      end
+
       data = resource.key?('data') ? resource['data'] : resource
-      included = resource['included']
 
       normalize_resource(data)
       klass_deserializer = RailsJSONAPI.type_to_deserializer_proc.call(data['type'])
@@ -23,7 +27,7 @@ module RailsJSONAPI
       deserialized = klass_deserializer.call(data)
 
       # handle nested included
-      if included.present?
+      if (included = resource['included']).present?
         grouped_by_type = included.group_by { |r| r['type'].underscore }
 
         grouped_by_type.each do |type, group|

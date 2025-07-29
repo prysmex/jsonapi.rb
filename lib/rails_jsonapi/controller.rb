@@ -87,10 +87,10 @@ module RailsJSONAPI
         # @param resource [ActionController::Parameters]
         # @param lid_key [String|NilClass]
         # @return [Hash{Symbol => *}]
-        def deep_deserialize_jsonapi(resource, *, **)
+        def deep_deserialize_jsonapi(resource, *, **, &)
           resource = resource.as_json if resource.is_a?(ActionController::Parameters)
           RailsJSONAPI::DeepDeserializer.new(resource, *, **)
-            .deep_deserialize
+            .deep_deserialize(&)
         end
       end
 
