@@ -2,6 +2,7 @@
 
 module RailsJSONAPI
   class DeepDeserializer
+    class FormatError < StandardError; end
 
     # @param [Hash{String => *}] resource jsonapi payload
     # @param [String|NilClass] lid_key
@@ -13,6 +14,7 @@ module RailsJSONAPI
     # @param [Hash{String => *}] resource jsonapi payload
     # @return [Hash{Symbol => *}]
     def deep_deserialize(resource = @resource)
+      # allow processing resource
       if block_given?
         new_resource = yield(resource)
         resource = new_resource if new_resource
@@ -21,14 +23,14 @@ module RailsJSONAPI
       data = resource.key?('data') ? resource['data'] : resource
 
       normalize_resource(data)
-      klass_deserializer = RailsJSONAPI.type_to_deserializer_proc.call(data['type'])
+      klass_deserializer = RailsJSONAPI.type_to_deserializer_proc.call(required(data, 'type'))
 
       # Hash{Symbol => *}
       deserialized = klass_deserializer.call(data)
 
       # handle nested included
       if (included = resource['included']).present?
-        grouped_by_type = included.group_by { |r| r['type'].underscore }
+        grouped_by_type = included.group_by { |r| required(r, 'type').underscore }
 
         grouped_by_type.each do |type, group|
           if klass_deserializer.has_one_rel_blocks[type.singularize]
@@ -58,6 +60,18 @@ module RailsJSONAPI
       if @lid_key && (lid = data[@lid_key])
         data['attributes'][@lid_key] = lid
       end
+    end
+
+    # raises if key is missing or value is not present
+    #
+    # @param [Hash] hash
+    # @param [String] key
+    # @return [*]
+    def required(hash, key)
+      value = hash[key]
+      raise FormatError.new("JSON:API object is missing key '#{key}' or value is empty") unless value.present?
+
+      value
     end
 
   end
