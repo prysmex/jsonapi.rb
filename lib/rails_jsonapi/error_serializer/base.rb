@@ -6,30 +6,35 @@ module RailsJSONAPI
   module ErrorSerializer
 
     # A simple error serializer
-    # This could be a simpler class, since the 'serializable_hash'
-    # method is overriden.
     class Base
-      include FastJsonapi::ObjectSerializer
+      KEYS = %i[id links status code title detail source meta].freeze
 
-      set_id :object_id
-      set_type :error
-
-      # define 'attribute's that support Object/Hash
-      %i[id links status code title detail source meta].each do |name|
-        attribute name do |object, _params|
-          object.try(name) || (object.is_a?(Hash) ? object[name] : nil)
-        end
+      # @param [Hash|Object|Array<Hash|Object>] resource
+      # @param [Hash{Symbol => *}] options
+      def initialize(resource, options = {})
+        @resource = Array.wrap(resource)
+        @options = options
       end
 
       # Override serialization since JSONAPI's errors spec
       # Remap the root key to `errors`
       # @return [Hash]
       def serializable_hash
-        super.then do |hash|
-          errors = (hash[:data] || []).map { |error| error[:attributes].select { |_k, v| v.present? } }
+        errors = @resource.filter_map do |r|
+          is_hash = r.is_a?(Hash)
 
-          {errors:}
+          error = KEYS.each_with_object({}) do |k, obj|
+            val = is_hash ? r[k] : r.try(k)
+            next unless val
+
+            obj[k] = val
+          end
+          next if error.empty?
+
+          error
         end
+
+        { errors: }
       end
 
     end
