@@ -49,18 +49,19 @@ module RailsJSONAPI
 
     # @param [*] resource
     # @param [Hash{Symbol => *}] options
+    # @param [ActionController::API] controller
     # @param [Boolean|NilClass] many
     # @param [Boolean|NilClass] use_hooks
     # @return [Class]
-    def self.resource_serializer_class(resource, options, many = nil, use_hooks = nil)
+    def self.resource_serializer_class(resource, options, controller = nil, many = nil, use_hooks = nil)
       many = options[:is_collection] || collection?(resource) if many.nil?
       use_hooks = !options[:skip_jsonapi_hooks] if use_hooks.nil?
 
       # from options
       serializer_class = options.delete(:serializer_class)
       # from hook
-      if !serializer_class && use_hooks && respond_to?(:jsonapi_serializer_class, true)
-        serializer_class = jsonapi_serializer_class(resource, many)
+      if !serializer_class && use_hooks && controller.respond_to?(:jsonapi_serializer_class, true)
+        serializer_class = controller.send(:jsonapi_serializer_class, resource, many)
       end
       # default
       serializer_class || infer_serializer_from_resource(resource, many)
@@ -152,7 +153,7 @@ module RailsJSONAPI
             return Oj.dump(options.slice(:meta, :links).merge(data: []), mode: :compat) if many && data.empty?
 
             # get serializer class
-            value = RailsJSONAPI::Rails.resource_serializer_class(resource, options, many, use_hooks)
+            value = RailsJSONAPI::Rails.resource_serializer_class(resource, options, self, many, use_hooks)
               .new(data, options)
               .serializable_hash
 
