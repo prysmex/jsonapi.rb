@@ -30,15 +30,26 @@ module RailsJSONAPI
 
       # handle nested included
       if (included = resource['included']).present?
-        grouped_by_type = included.group_by { |r| required(r, 'type').underscore }
+        grouped_by_rel_name = included.group_by do |r|
+          matched_rel = data['relationships']&.find do |_k, rel|
+            next unless rel['data']
 
-        grouped_by_type.each do |type, group|
-          if klass_deserializer.has_one_rel_blocks[type.singularize]
-            deserialized[:"#{type.singularize}_attributes"] = deep_deserialize(group[0])
-          elsif klass_deserializer.has_many_rel_blocks[type]
-            deserialized[:"#{type}_attributes"] = group.map do |r|
+            Array.wrap(rel['data']).any? { |o| o['type'] == required(r, 'type') && o['id'] == required(r, 'id') }
+          end
+          raise StandardError.new("could not match relationships for  #{r['type']} #{r['id']}") unless matched_rel
+
+          matched_rel&.first
+        end
+
+        grouped_by_rel_name.each do |rel_name, group|
+          if klass_deserializer.has_one_rel_blocks[rel_name]
+            deserialized[:"#{rel_name}_attributes"] = deep_deserialize(group[0])
+          elsif klass_deserializer.has_many_rel_blocks[rel_name]
+            deserialized[:"#{rel_name}_attributes"] = group.map do |r|
               deep_deserialize(r)
             end
+          else
+            raise StandardError.new("relationship '#{rel_name}' not defined in #{klass_deserializer.name}")
           end
         end
       end
