@@ -28,8 +28,8 @@ module RailsJSONAPI
       # Hash{Symbol => *}
       deserialized = klass_deserializer.call(data)
 
-      # handle nested included
-      if (included = resource['included']).present?
+      # handle nested included, supported both at 'data' or 'attributes' level
+      if (included = data['included'] || resource['included']).present?
         grouped_by_rel_name = included.group_by do |r|
           matched_rel = data['relationships']&.find do |_k, rel|
             next unless rel['data']

@@ -11,12 +11,14 @@ module RailsJSONAPI
     # @ToDo should only 'data' be moved into '_raw_jsonapi' key?
     PARSER = lambda do |body|
       parsed = ActionDispatch::Request.parameter_parsers[:json].call(body)
-      parsed.merge({
-        'raw_jsonapi' => {
-          'data' => parsed.delete('data'),
-          'included' => parsed.delete('included')
-        }.compact
-      })
+      return parsed unless parsed.key?('data') || parsed.key?('included')
+
+      parsed['raw_jsonapi'] = {
+        'data' => parsed.delete('data'),
+        'included' => parsed.delete('included')
+      }.compact!
+
+      parsed
     end
 
     # Checks if an object is a collection
@@ -123,6 +125,12 @@ module RailsJSONAPI
           # *any other options for the serializer class
           ActionController::Renderers.add(:jsonapi) do |resource, options|
             self.content_type = Mime[:jsonapi] if RailsJSONAPI.force_content_type || !content_type
+
+            many = options[:is_collection] || RailsJSONAPI::Rails.collection?(resource)
+            # preload data
+            data = many ? resource.to_a : resource
+            is_empty_collection = many && data.empty? # check if empty
+
             use_hooks = !options[:skip_jsonapi_hooks]
 
             # call hooks
@@ -132,25 +140,21 @@ module RailsJSONAPI
                 options = default_opts.merge(options)
               end
 
-              # hook to handle fields param
-              if jsonapi_fields_param
-                respond_to?(:handle_jsonapi_fields_param, true) && send(:handle_jsonapi_fields_param, resource, options)
-              end
+              unless is_empty_collection # do not call
+                # hook to handle fields param
+                if jsonapi_fields_param
+                  respond_to?(:handle_jsonapi_fields_param, true) && send(:handle_jsonapi_fields_param, resource, options)
+                end
 
-              # hook to handle include param
-              if jsonapi_include_param
-                respond_to?(:handle_jsonapi_include_param, true) && send(:handle_jsonapi_include_param, resource, options)
+                # hook to handle include param
+                if jsonapi_include_param
+                  respond_to?(:handle_jsonapi_include_param, true) && send(:handle_jsonapi_include_param, resource, options)
+                end
               end
             end
 
             # If it's an empty collection, return it
-            many = options[:is_collection] || RailsJSONAPI::Rails.collection?(resource)
-
-            # preload data
-            data = many ? resource.to_a : resource
-
-            # return early
-            return Oj.dump(options.slice(:meta, :links).merge(data: []), mode: :compat) if many && data.empty?
+            return Oj.dump(options.slice(:meta, :links).merge(data:), mode: :compat) if is_empty_collection
 
             # get serializer class
             value = RailsJSONAPI::Rails.resource_serializer_class(resource, options, self, many, use_hooks)
