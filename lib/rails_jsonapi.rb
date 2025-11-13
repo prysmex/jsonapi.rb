@@ -14,7 +14,7 @@ module RailsJSONAPI
 
   @class_to_serializer_proc = ->(klass) { "#{klass.name}Serializer".constantize }
   @class_to_multimodel_serializer_proc = @class_to_serializer_proc
-  @class_to_errors_serializer_proc = ->(klass) {
+  @class_to_errors_serializer_proc = lambda { |klass|
     klass == ActiveModel::Errors ? RailsJSONAPI::ErrorSerializer::ActiveModel : RailsJSONAPI::ErrorSerializer::Base
   }
 

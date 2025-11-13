@@ -19,7 +19,7 @@ gem 'rails', ENV.fetch('RAILS_VERSION', nil)
 gem 'rake', '~> 13.3'
 
 # rubocop
-gem 'rubocop', '~> 1.76'
+gem 'rubocop', '~> 1.81'
 # gem 'rubocop-minitest', '~> 0.38'
-gem 'rubocop-performance', '~> 1.25'
+gem 'rubocop-performance', '~> 1.26'
 gem 'rubocop-rake', '~> 0.7'

@@ -37,8 +37,8 @@ module RailsJSONAPI
         serializer_klass = @options&.dig(:params, :record_serializer) ||
                            RailsJSONAPI::Rails.resource_serializer_class(@record, @options)
         if serializer_klass
-          @attrs ||= (serializer_klass.attributes_to_serialize.keys.map { |k| k.to_s.underscore.to_sym }) || []
-          @rels ||= (serializer_klass.relationships_to_serialize.keys.map { |k| k.to_s.underscore.to_sym }) || []
+          @attrs ||= serializer_klass.attributes_to_serialize.keys.map { |k| k.to_s.underscore.to_sym } || []
+          @rels ||= serializer_klass.relationships_to_serialize.keys.map { |k| k.to_s.underscore.to_sym } || []
         end
 
         details = @resource.details

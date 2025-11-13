@@ -3,6 +3,12 @@
 require 'rails/railtie'
 
 module RailsJSONAPI
+
+  # Call a private method if it exists
+  def self.try_private(ctx, method, ...)
+    ctx.respond_to?(method, true) ? ctx.send(method, ...) : nil
+  end
+
   module Rails
 
     # Used to wrap jsonapi request inside a hash with the *raw_jsonapi* key. It is called
@@ -55,12 +61,12 @@ module RailsJSONAPI
     # @param [Boolean|NilClass] many
     # @param [Boolean|NilClass] use_hooks
     # @return [Class]
-    def self.resource_serializer_class(resource, options, controller = nil, many = nil, use_hooks = nil)
-      many = options[:is_collection] || collection?(resource) if many.nil?
-      use_hooks = !options[:skip_jsonapi_hooks] if use_hooks.nil?
+    def self.resource_serializer_class(resource, opts, controller = nil, many = nil, use_hooks = nil)
+      many = opts[:is_collection] || collection?(resource) if many.nil?
+      use_hooks = !opts[:skip_jsonapi_hooks] if use_hooks.nil?
 
       # from options
-      serializer_class = options.delete(:serializer_class)
+      serializer_class = opts.delete(:serializer_class)
       # from hook
       if !serializer_class && use_hooks && controller.respond_to?(:jsonapi_serializer_class, true)
         serializer_class = controller.send(:jsonapi_serializer_class, resource, many)
@@ -123,42 +129,38 @@ module RailsJSONAPI
           # @option options [Class] :serializer_class
           # @option options [Boolean] :skip_jsonapi_hooks
           # *any other options for the serializer class
-          ActionController::Renderers.add(:jsonapi) do |resource, options|
+          ActionController::Renderers.add(:jsonapi) do |resource, opts|
             self.content_type = Mime[:jsonapi] if RailsJSONAPI.force_content_type || !content_type
 
-            many = options[:is_collection] || RailsJSONAPI::Rails.collection?(resource)
+            many = opts[:is_collection] || RailsJSONAPI::Rails.collection?(resource)
             # preload data
             data = many ? resource.to_a : resource
             is_empty_collection = many && data.empty? # check if empty
 
-            use_hooks = !options[:skip_jsonapi_hooks]
+            use_hooks = !opts[:skip_jsonapi_hooks]
 
             # call hooks
             if use_hooks
               # default_jsonapi_options
-              if respond_to?(:default_jsonapi_options, true) && (default_opts = send(:default_jsonapi_options, resource, options))
-                options = default_opts.merge(options)
+              if (default_opts = RailsJSONAPI.try_private(self, :default_jsonapi_options, resource, opts))
+                opts = default_opts.merge(opts)
               end
 
               unless is_empty_collection # do not call
                 # hook to handle fields param
-                if jsonapi_fields_param
-                  respond_to?(:handle_jsonapi_fields_param, true) && send(:handle_jsonapi_fields_param, resource, options)
-                end
+                RailsJSONAPI.try_private(self, :handle_jsonapi_fields_param, resource, opts) if jsonapi_fields_param
 
                 # hook to handle include param
-                if jsonapi_include_param
-                  respond_to?(:handle_jsonapi_include_param, true) && send(:handle_jsonapi_include_param, resource, options)
-                end
+                RailsJSONAPI.try_private(self, :handle_jsonapi_include_param, resource, opts) if jsonapi_include_param
               end
             end
 
             # If it's an empty collection, return it
-            return Oj.dump(options.slice(:meta, :links).merge(data:), mode: :compat) if is_empty_collection
+            return Oj.dump(opts.slice(:meta, :links).merge(data:), mode: :compat) if is_empty_collection
 
             # get serializer class
-            value = RailsJSONAPI::Rails.resource_serializer_class(resource, options, self, many, use_hooks)
-              .new(data, options)
+            value = RailsJSONAPI::Rails.resource_serializer_class(resource, opts, self, many, use_hooks)
+              .new(data, opts)
               .serializable_hash
 
             Oj.dump(value, mode: :compat)
@@ -181,10 +183,10 @@ module RailsJSONAPI
           #       - :sort_id_attr [Symbol]
           #       - :options
           # *any other options for the serializer class
-          ActionController::Renderers.add(:multimodel_jsonapi) do |resource, options|
+          ActionController::Renderers.add(:multimodel_jsonapi) do |resource, opts|
             self.content_type = Mime[:jsonapi] if RailsJSONAPI.force_content_type || !content_type
 
-            multimodel_options = options.delete(:multimodel_options) || {}
+            multimodel_options = opts.delete(:multimodel_options) || {}
 
             # root defaults
             serializer = (
@@ -250,28 +252,28 @@ module RailsJSONAPI
           # Options that can be passed when calling the renderer
           #
           # - is_collection
-          ActionController::Renderers.add(:jsonapi_errors) do |resource, options|
+          ActionController::Renderers.add(:jsonapi_errors) do |resource, opts|
             self.content_type = Mime[:jsonapi] if RailsJSONAPI.force_content_type || !content_type
 
-            use_hooks = !options[:skip_jsonapi_hooks]
-            many = options[:is_collection] || RailsJSONAPI::Rails.collection?(resource)
+            use_hooks = !opts[:skip_jsonapi_hooks]
+            many = opts[:is_collection] || RailsJSONAPI::Rails.collection?(resource)
 
             # call hooks
             if use_hooks
               # default_jsonapi_options
-              if respond_to?(:default_jsonapi_options, true) && (default_opts = send(:default_jsonapi_options, resource, options))
-                options = default_opts.merge(options)
+              if (default_opts = RailsJSONAPI.try_private(self, :default_jsonapi_options, resource, opts)) # rubocop:disable Style/SoleNestedConditional
+                opts = default_opts.merge(opts)
               end
             end
 
             # get serializer class
-            serializer_class = options.delete(:errors_serializer_class)
+            serializer_class = opts.delete(:errors_serializer_class)
             if !serializer_class && use_hooks && respond_to?(:jsonapi_errors_serializer_class, true)
               serializer_class = jsonapi_errors_serializer_class(resource, many)
             end
             serializer_class ||= RailsJSONAPI.class_to_errors_serializer_proc.call(resource.class)
 
-            value = serializer_class.new(resource, options).serializable_hash
+            value = serializer_class.new(resource, opts).serializable_hash
             Oj.dump(value, mode: :compat)
           end
         end
