@@ -83,6 +83,10 @@ module RailsJSONAPI
     #
     class Railtie < ::Rails::Railtie
 
+      config.to_prepare do
+        RailsJSONAPI.reset_caches!
+      end
+
       # call register methods on the Railtie
       #
       # @todo uncomment MediaTypeFilter middleware
