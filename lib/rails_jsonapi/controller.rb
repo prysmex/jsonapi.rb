@@ -8,7 +8,7 @@ module RailsJSONAPI
     # @example
     #   class ArticlesController < ActionController::Base
 
-    #     before_action only: [:create, :update], if: -> { json_api_request? } do |ctx|
+    #     before_action only: [:create, :update], if: -> { jsonapi_request_content_type? } do |ctx|
     #       raw_jsonapi = ctx.params['raw_jsonapi']
     #       key_name = raw_jsonapi['data']['type'].underscore.singularize
 
@@ -40,13 +40,11 @@ module RailsJSONAPI
     end
 
     module Utils
-      # Checks if the request's content_mime_type matches jsonapi
+      # Returns true if the incoming request body is JSON:API
       #
-      # @return [Boolean] true when request contains jsonapi mime
-      def json_api_request?
-        request
-          .try(:content_mime_type)
-          .try(:instance_variable_get, :@string) == ::RailsJSONAPI::MEDIA_TYPE
+      # @return [Boolean]
+      def jsonapi_request_content_type?
+        request.try(:content_mime_type) == Mime[:jsonapi]
       end
 
       # Extracts and formats 'fields' jsonapi param
