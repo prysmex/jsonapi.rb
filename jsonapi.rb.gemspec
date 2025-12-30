@@ -40,5 +40,5 @@ Gem::Specification.new do |spec|
 
   # jsonapi-serializer always points to last version
   # # spec.add_development_dependency 'activerecord', '~> 8.0'
-  spec.add_dependency 'activesupport', '~> 8.0'
+  spec.add_dependency 'activesupport', '~> 8.1'
 end
