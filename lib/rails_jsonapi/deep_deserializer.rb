@@ -49,6 +49,7 @@ module RailsJSONAPI
               deep_deserialize(r)
             end
           else
+            # TODO: change to something like "relationship '#{rel_name}' is not supported as nested"
             raise StandardError.new("relationship '#{rel_name}' not defined in #{klass_deserializer.name}")
           end
         end
